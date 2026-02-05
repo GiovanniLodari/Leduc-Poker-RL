@@ -1,0 +1,12 @@
+{"type": "info", "run_name": "study_deep_cfr_20260123_183824", "start_time": "2026-01-23T18:38:24.968812"}
+{"iteration": 0, "exploitability": 2.557264804840088, "nash_conv": 5.114529609680176, "timestamp": "2026-01-23T18:39:49.382776", "type": "metrics"}
+{"iteration": 2000, "exploitability": 0.09928102046251297, "nash_conv": 0.19856204092502594, "timestamp": "2026-01-23T22:35:59.207529", "type": "metrics"}
+{"iteration": 4000, "exploitability": 0.08405207097530365, "nash_conv": 0.1681041419506073, "timestamp": "2026-01-24T03:48:31.261279", "type": "metrics"}
+{"iteration": 6000, "exploitability": 0.07928049564361572, "nash_conv": 0.15856099128723145, "timestamp": "2026-01-24T10:18:53.259025", "type": "metrics"}
+{"iteration": 8000, "exploitability": 0.08385448157787323, "nash_conv": 0.16770896315574646, "timestamp": "2026-01-24T18:11:09.713101", "type": "metrics"}
+{"iteration": 10000, "exploitability": 0.07396479696035385, "nash_conv": 0.1479295939207077, "timestamp": "2026-01-25T03:04:25.579583", "type": "metrics"}
+{"iteration": 12000, "exploitability": 0.07129524648189545, "nash_conv": 0.1425904929637909, "timestamp": "2026-01-25T12:15:02.482676", "type": "metrics"}
+{"iteration": 14000, "exploitability": 0.06603965908288956, "nash_conv": 0.1320793181657791, "timestamp": "2026-01-25T21:46:44.294192", "type": "metrics"}
+{"iteration": 16000, "exploitability": 0.06700105220079422, "nash_conv": 0.13400210440158844, "timestamp": "2026-01-26T07:40:46.903783", "type": "metrics"}
+{"iteration": 18000, "exploitability": 0.06268469989299774, "nash_conv": 0.12536939978599548, "timestamp": "2026-01-26T18:40:58.670294", "type": "metrics"}
+{"iteration": 20000, "exploitability": 0.06162210553884506, "nash_conv": 0.12324421107769012, "timestamp": "2026-01-27T05:29:20.772289", "type": "metrics"}

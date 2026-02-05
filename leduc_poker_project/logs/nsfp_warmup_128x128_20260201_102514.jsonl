@@ -1,0 +1,17 @@
+{"type": "info", "run_name": "nsfp_warmup_128x128_20260201_102514", "start_time": "2026-02-01T10:25:14.583256"}
+{"episode": 0, "exploitability": 2.2441148712113366, "nash_conv": 4.488229742422673, "phase": "WARMUP", "timestamp": "2026-02-01T10:25:19.202979", "type": "metrics"}
+{"episode": 10000, "exploitability": 2.2441148712113366, "nash_conv": 4.488229742422673, "phase": "WARMUP", "timestamp": "2026-02-01T10:26:07.725951", "type": "metrics"}
+{"episode": 20000, "exploitability": 2.2441148712113366, "nash_conv": 4.488229742422673, "phase": "WARMUP", "timestamp": "2026-02-01T10:26:55.017987", "type": "metrics"}
+{"episode": 30000, "exploitability": 2.2441148712113366, "nash_conv": 4.488229742422673, "phase": "WARMUP", "timestamp": "2026-02-01T10:27:43.831361", "type": "metrics"}
+{"episode": 40000, "exploitability": 2.2441148712113366, "nash_conv": 4.488229742422673, "phase": "WARMUP", "timestamp": "2026-02-01T10:28:32.795664", "type": "metrics"}
+{"episode": 50000, "exploitability": 2.2441148712113366, "nash_conv": 4.488229742422673, "phase": "WARMUP", "timestamp": "2026-02-01T10:29:19.782437", "type": "metrics"}
+{"episode": 60000, "exploitability": 2.2441148712113366, "nash_conv": 4.488229742422673, "phase": "WARMUP", "timestamp": "2026-02-01T10:30:04.312002", "type": "metrics"}
+{"episode": 70000, "exploitability": 2.2441148712113366, "nash_conv": 4.488229742422673, "phase": "WARMUP", "timestamp": "2026-02-01T10:30:47.380377", "type": "metrics"}
+{"episode": 80000, "exploitability": 2.2441148712113366, "nash_conv": 4.488229742422673, "phase": "WARMUP", "timestamp": "2026-02-01T10:31:33.437777", "type": "metrics"}
+{"episode": 90000, "exploitability": 2.2441148712113366, "nash_conv": 4.488229742422673, "phase": "WARMUP", "timestamp": "2026-02-01T10:32:17.946107", "type": "metrics"}
+{"episode": 100000, "exploitability": 2.2441148712113366, "nash_conv": 4.488229742422673, "phase": "TRAIN", "timestamp": "2026-02-01T10:33:03.800053", "type": "metrics"}
+{"episode": 110000, "exploitability": 2.074703382344705, "nash_conv": 4.14940676468941, "phase": "TRAIN", "timestamp": "2026-02-01T10:34:02.947047", "type": "metrics"}
+{"episode": 120000, "exploitability": 2.196999579543778, "nash_conv": 4.393999159087556, "phase": "TRAIN", "timestamp": "2026-02-01T10:34:57.309236", "type": "metrics"}
+{"episode": 130000, "exploitability": 2.374891241109992, "nash_conv": 4.749782482219984, "phase": "TRAIN", "timestamp": "2026-02-01T10:35:51.873815", "type": "metrics"}
+{"episode": 140000, "exploitability": 2.519212090372462, "nash_conv": 5.038424180744924, "phase": "TRAIN", "timestamp": "2026-02-01T10:36:42.679283", "type": "metrics"}
+{"episode": 150000, "exploitability": 2.6387208711313024, "nash_conv": 5.277441742262605, "phase": "TRAIN", "timestamp": "2026-02-01T10:37:37.648212", "type": "metrics"}

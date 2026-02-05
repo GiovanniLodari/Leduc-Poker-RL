@@ -1,0 +1,4 @@
+{"type": "info", "run_name": "study_cfr_20260127_095658", "start_time": "2026-01-27T09:56:58.305432"}
+{"iteration": 0, "exploitability": 2.373611111111111, "nash_conv": 4.747222222222222, "timestamp": "2026-01-27T09:56:58.598384", "type": "metrics"}
+{"iteration": 100, "exploitability": 0.09394927266361149, "nash_conv": 0.18789854532722297, "timestamp": "2026-01-27T09:57:06.797274", "type": "metrics"}
+{"iteration": 200, "nash_conv": 0.10767664780563926, "timestamp": "2026-01-27T09:57:14.732640", "type": "metrics"}
