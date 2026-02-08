@@ -1,4 +1,4 @@
-{"type": "info", "run_name": "nfsp_swapped_32_20260204_083523", "start_time": "2026-02-04T08:35:23.426209"}
+{"type": "info", "run_name": "nfsp_swapped_32", "start_time": "2026-02-04T08:35:23.426209"}
 {"episode": 0, "exploitability": 2.1324232832333547, "nash_conv": 4.2648465664667095, "timestamp": "2026-02-04T08:35:25.932641", "type": "metrics"}
 {"episode": 10000, "exploitability": 2.2111496627968243, "nash_conv": 4.422299325593649, "timestamp": "2026-02-04T08:36:31.760065", "type": "metrics"}
 {"episode": 20000, "exploitability": 2.2179601320187987, "nash_conv": 4.435920264037597, "timestamp": "2026-02-04T08:37:43.537923", "type": "metrics"}
