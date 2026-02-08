@@ -13,14 +13,12 @@ class LocalLogger:
         self.log_dir = os.path.join(project_root, "logs")
         os.makedirs(self.log_dir, exist_ok=True)
         
-        # Append timestamp to filename for uniqueness
         now = datetime.now()
         timestamp_suffix = now.strftime("%Y%m%d_%H%M%S")
         self.run_name = f"{run_name}_{timestamp_suffix}"
         self.log_file = os.path.join(self.log_dir, f"{self.run_name}.jsonl")
         self.start_time = now.isoformat()
         
-        # Inizializza il file con le informazioni della run
         with open(self.log_file, "w") as f:
             f.write(json.dumps({
                 "type": "info", 

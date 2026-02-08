@@ -6,18 +6,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from open_spiel.python import rl_environment
 
-# Importiamo le utility che hai già definito in tournament_study
 from tournament_study import load_agent
 
 def plot_strategy_heatmap(agent_path, algo, game_name="leduc_poker"):
     env = rl_environment.Environment(game_name)
     agent = load_agent(agent_path, algo, env)
     
-    # Definiamo gli stati che vogliamo analizzare (Pre-flop: J, Q, K)
     actions = ["Fold", "Call", "Raise"]
     cards = ["Jack", "Queen", "King"]
     
-    # In Leduc le azioni di gioco sono sempre 3
     num_actions = 3
     strategy_matrix = np.zeros((len(cards), num_actions))
     
@@ -25,11 +22,10 @@ def plot_strategy_heatmap(agent_path, algo, game_name="leduc_poker"):
     
     for i in range(len(cards)):
         state = env.game.new_initial_state()
-        # Distribuiamo le carte: P0 riceve la carta i, P1 riceve un'altra carta
+
         state.apply_action(i * 2) 
         state.apply_action(1 if i*2 == 0 else 0)
         
-        # Prendiamo le probabilità dell'agente (già normalizzate da load_agent)
         probs_dict = agent.action_probabilities(state)
         for a_idx in range(num_actions):
             strategy_matrix[i, a_idx] = probs_dict.get(a_idx, 0.0)

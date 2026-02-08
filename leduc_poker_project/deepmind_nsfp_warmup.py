@@ -15,7 +15,6 @@ import pickle
 import signal
 import jax
 
-# Silenzia avvisi tecnici XLA/JAX
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 
@@ -78,7 +77,7 @@ def setup_gpu():
 
 def train(args):
     setup_gpu()
-    # Dashboard config
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         if s.connect_ex(('localhost', 8000)) != 0:
             base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -98,7 +97,6 @@ def train(args):
     num_actions = env.action_spec()["num_actions"]
     info_state_size = env.observation_spec()["info_state"][0]
 
-    # Setup Agenti - Sincronizzazione Reattiva
     agents = [
         nfsp.NFSP(idx, info_state_size, num_actions, hidden_layers,
                   reservoir_buffer_capacity=args.reservoir,
@@ -111,9 +109,6 @@ def train(args):
     ]
     eval_policy = OS_Policy_Wrapper(env, agents, nfsp.MODE.average_policy)
 
-    # Patch per disabilitare il training durante il warmup
-    # Salviamo i metodi originali
-    # Nota: DQN usa 'learn' (pubblico), NFSP usa '_learn' (privato)
     original_learn_dqn = [a._rl_agent.learn for a in agents]
     original_learn_avg = [a._learn for a in agents]
 
@@ -122,23 +117,20 @@ def train(args):
     for ep in range(args.episodes + args.warmup):
         is_warmup = (ep < args.warmup)
         
-        # Durante il warmup, disabilitiamo il learning e forziamo l'esplorazione random
         if is_warmup:
             for a in agents:
                 a._rl_agent.learn = dummy_learn
                 a._learn = dummy_learn
-                # Durante il warmup, forziamo l'agente a usare la policy media (random all'inizio)
-                # o semplicemente un epsilon alto. NFSP usa l'agente RL con epsilon-greedy.
+
                 a._rl_agent._epsilon = 1.0 
         else:
-            # Ripristiniamo il learning dopo il warmup (solo una volta)
+
             if ep == args.warmup:
                 print(f"\n--- FINE WARMUP: Inizio addestramento reale ---")
                 for i, a in enumerate(agents):
                     a._rl_agent.learn = original_learn_dqn[i]
                     a._learn = original_learn_avg[i]
             
-            # Epsilon Decay lineare post-warmup: 0.2 -> 0.06 in 500.000 episodi
             decay_duration = 500000
             epsilon_start = 0.2
             epsilon_end = 0.06
@@ -152,7 +144,6 @@ def train(args):
             for a in agents:
                 a._rl_agent._epsilon = current_eps
 
-        # Mappa ruoli random
         if np.random.rand() < 0.5:
             env_to_agent = {0: agents[0], 1: agents[1]}
         else:
@@ -163,7 +154,6 @@ def train(args):
             player_id = time_step.observations["current_player"]
             acting_agent = env_to_agent[player_id]
             
-            # Swapping Logic
             if acting_agent.player_id != player_id:
                 obs = time_step.observations.copy()
                 obs["info_state"] = [obs["info_state"][1], obs["info_state"][0]]
@@ -178,7 +168,6 @@ def train(args):
             action_output = acting_agent.step(ts_for_agent)
             time_step = env.step([action_output.action])
 
-        # Step finale per raccogliere i reward nel buffer
         for role, agent in env_to_agent.items():
             if agent.player_id != role:
                 obs = time_step.observations.copy()
@@ -192,7 +181,6 @@ def train(args):
             
             agent.step(ts_for_agent)
 
-        # Logging e Valutazione
         if ep % args.eval_every == 0:
             eval_policy.clear_cache()
             expl = exploitability.exploitability(env.game, eval_policy)

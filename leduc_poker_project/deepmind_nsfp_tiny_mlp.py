@@ -15,19 +15,16 @@ import pickle
 import signal
 import jax
 
-# Silenzia avvisi tecnici XLA/JAX
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 
 from dashboard.logger import LocalLogger
 from dashboard.plotter import generate_run_plots
 
-
 def handle_exit(signum, frame, run_name):
     print(f"\nTraining interrotto. Salvataggio finale e generazione grafici...")
     generate_run_plots(run_name)
     sys.exit(0)
-
 
 class OS_Policy_Wrapper(policy.Policy):
     def __init__(self, env, agents, mode):
@@ -65,13 +62,11 @@ class OS_Policy_Wrapper(policy.Policy):
     def clear_cache(self):
         self._cache = {}
 
-
 def setup_gpu():
     """Configura l'ambiente per abilitare la GPU su WSL/Linux se necessario."""
     if os.environ.get("GPU_SETUP_DONE") == "1":
         return
     
-    # Percorsi NVIDIA nel venv
     venv_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     nvidia_base = os.path.join(venv_base, ".venv", "lib", "python3.10", "site-packages", "nvidia")
     
@@ -86,7 +81,6 @@ def setup_gpu():
     os.environ["GPU_SETUP_DONE"] = "1"
     os.execv(sys.executable, [sys.executable] + sys.argv)
 
-
 def start_dashboard():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         if s.connect_ex(('localhost', 8000)) == 0:
@@ -97,12 +91,10 @@ def start_dashboard():
     subprocess.Popen([sys.executable, server_script], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(2)
 
-
 def train(args):
     setup_gpu()
     start_dashboard()
     
-    # Architettura definita dall'utente (es. 16,16)
     hidden_layers = [int(h) for h in args.hidden_list.split(",")]
     tag = f"mlp_tiny_{args.hidden_list.replace(',', 'x')}"
     
@@ -118,7 +110,6 @@ def train(args):
     num_actions = env.action_spec()["num_actions"]
     info_state_size = env.observation_spec()["info_state"][0]
 
-    # Setup Agenti con architettura TINY
     agents = [
         nfsp.NFSP(idx, info_state_size, num_actions, hidden_layers,
                   reservoir_buffer_capacity=args.reservoir,
@@ -139,7 +130,6 @@ def train(args):
             player_id = time_step.observations["current_player"]
             acting_agent = env_to_agent[player_id]
             
-            # Swapping LOGIC con fix dei reward (fondamentale!)
             if acting_agent.player_id != player_id:
                 obs = time_step.observations.copy()
                 obs["info_state"] = [obs["info_state"][1], obs["info_state"][0]]
@@ -155,7 +145,6 @@ def train(args):
                 action_output = acting_agent.step(time_step)
             time_step = env.step([action_output.action])
        
-        # Step finale per l'apprendimento
         for role, agent in env_to_agent.items():
             if agent.player_id != role:
                 obs = time_step.observations.copy()

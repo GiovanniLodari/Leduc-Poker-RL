@@ -39,7 +39,6 @@
             height: 100vh;
         }
 
-        /* Sidebar */
         aside {
             background: var(--glass);
             backdrop-filter: blur(10px);
@@ -89,7 +88,6 @@
             border: 1px solid rgba(0, 210, 255, 0.3);
         }
 
-        /* Main Content */
         main {
             padding: 2rem;
             overflow-y: auto;
@@ -216,7 +214,6 @@
             margin: 0;
         }
 
-        /* The track container */
         .slider-track-container {
             position: relative;
             width: 100%;
@@ -270,7 +267,7 @@
             <div>
                 <h3 style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1rem;">RUN RECENTI</h3>
                 <ul class="run-list" id="run-list">
-                    <!-- Dinamico -->
+                    
                 </ul>
             </div>
         </aside>
@@ -378,7 +375,6 @@
                 list.appendChild(li);
             });
 
-            // Auto-seleziona l'ultima run (che è la prima nella lista ordinata)
             if (!currentRun && runs.length > 0) {
                 selectRun(runs[0].name);
             }
@@ -387,7 +383,7 @@
         async function selectRun(name) {
             currentRun = name;
             document.getElementById('run-title').innerText = name;
-            resetRange(); // Reset visual window when switching runs
+            resetRange(); 
             refreshRuns();
             updateData();
         }
@@ -451,7 +447,6 @@
             rangeStart = parseInt(document.getElementById('range-start').value);
             rangeEnd = parseInt(document.getElementById('range-end').value);
 
-            // UI Fix for overlapping sliders
             if (rangeStart > rangeEnd) {
                 if (event && event.target.id === 'range-start') {
                     rangeEnd = rangeStart;
@@ -493,7 +488,6 @@
             document.getElementById('range-label').innerText =
                 `${filteredIter[0] || 0} — ${filteredIter[filteredIter.length - 1] || 'MAX'}`;
 
-            // Update Stats based on selected range (showing values at the end of the window)
             const currentIter = filteredIter[filteredIter.length - 1];
             const currentNC = filteredNC[filteredNC.length - 1];
             const currentExpl = filteredExpl[filteredExpl.length - 1];

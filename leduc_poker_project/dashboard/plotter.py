@@ -30,13 +30,11 @@ def generate_run_plots(run_name):
 
     df = pd.DataFrame(metrics)
     
-    # Determina la colonna delle X (episode o iteration)
     x_col = "episode" if "episode" in df.columns else "iteration"
     
     plt.figure(figsize=(12, 5), facecolor='#0a0b10')
     plt.style.use('dark_background')
 
-    # Grafico NashConv
     if "nash_conv" in df.columns:
         plt.subplot(1, 2, 1)
         plt.plot(df[x_col], df["nash_conv"], color='#00d2ff', linewidth=2)
@@ -45,7 +43,6 @@ def generate_run_plots(run_name):
         plt.ylabel("NashConv", color='gray')
         plt.grid(True, linestyle='--', alpha=0.2)
 
-    # Grafico Exploitability
     if "exploitability" in df.columns:
         plt.subplot(1, 2, 2)
         plt.plot(df[x_col], df["exploitability"], color='#ff0055', linewidth=2)

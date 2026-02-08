@@ -7,12 +7,10 @@ import uvicorn
 
 app = FastAPI(title="Leduc Poker Local Monitor")
 
-# Paths relative to the project root
 UI_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(UI_DIR)
 LOGS_DIR = os.path.join(BASE_DIR, "logs")
 
-# Ensure logs directory exists
 os.makedirs(LOGS_DIR, exist_ok=True)
 
 @app.get("/api/runs")
@@ -26,18 +24,17 @@ async def get_runs():
                 first_line = log_file.readline()
                 info = json.loads(first_line)
                 if info.get("type") == "info":
-                    # Usiamo il nome del file come identificativo primario (senza .jsonl)
+
                     run_id = f.replace(".jsonl", "")
                     runs_info.append({
                         "name": run_id, 
-                        "display_name": info.get("run_name"), # Teniamo il nome originale come etichetta opzionale
+                        "display_name": info.get("run_name"),
                         "start_time": info.get("start_time"),
                         "file": f
                     })
         except:
             continue
     
-    # Sort by start_time descending
     runs_info.sort(key=lambda x: x["start_time"] if x["start_time"] else "", reverse=True)
     return runs_info
 

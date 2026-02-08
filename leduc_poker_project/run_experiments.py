@@ -1,6 +1,3 @@
-"Per avviare esperimanti anche di notte"
-
-
 import subprocess
 import sys
 import os

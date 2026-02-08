@@ -11,9 +11,8 @@ from open_spiel.python import rl_environment
 from open_spiel.python.jax import nfsp
 from open_spiel.python import policy
 
-# Importiamo le classi custom
 from deepmind_nsfp_attention import AttentionNFSP, AttentionDQN, setup_gpu as setup_gpu_attention
-# Nota: usiamo lo setup_gpu di uno degli script per essere sicuri che JAX veda la GPU/cuSPARSE
+
 def setup_jax_gpu():
     """Configura l'ambiente per JAX su WSL."""
     venv_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -27,7 +26,6 @@ def setup_jax_gpu():
     os.environ["LD_LIBRARY_PATH"] = ":".join(lib_paths) + (":" + current_ld if current_ld else "")
     os.environ["GPU_SETUP_DONE"] = "1"
 
-# Importiamo load_agent e AgentWrapper da tournament_study
 from tournament_study import load_agent, AgentWrapper
 
 def plot_custom_strategy(agent_path, algo, game_name="leduc_poker"):
@@ -41,7 +39,6 @@ def plot_custom_strategy(agent_path, algo, game_name="leduc_poker"):
     agent = None
     already_loaded = False
 
-    # 1. Istanziamo l'architettura corretta
     if "attention" in agent_path.lower() or "attention" in algo.lower():
         if "nfsp" in algo.lower():
             agent = AttentionNFSP(0, info_state_size, num_actions, [128], 
@@ -56,11 +53,10 @@ def plot_custom_strategy(agent_path, algo, game_name="leduc_poker"):
                          replay_buffer_capacity=1000,
                          anticipatory_param=0.1)
     else:
-        # Standard OpenSpiel o CFR
+
         agent = load_agent(agent_path, algo, env)
         already_loaded = True
 
-    # 2. Carichiamo i parametri manualmente per le classi custom
     if not already_loaded and agent is not None:
         with open(agent_path, "rb") as f:
             state = pickle.load(f)
@@ -71,11 +67,8 @@ def plot_custom_strategy(agent_path, algo, game_name="leduc_poker"):
         else:
             agent.params_q_network = state["q_params"]
         
-        # Lo avvolgiamo in AgentWrapper per avere action_probabilities
-        # Passiamo l'agente e l'OGGETTO env (non la stringa!)
         agent = AgentWrapper(agent, env)
 
-    # 3. Analisi degli stati
     actions = ["Fold", "Call", "Raise"]
     cards = ["Jack", "Queen", "King"]
     strategy_matrix = np.zeros((len(cards), 3))
@@ -90,7 +83,6 @@ def plot_custom_strategy(agent_path, algo, game_name="leduc_poker"):
         for a_idx in range(3):
             strategy_matrix[i, a_idx] = probs_dict.get(a_idx, 0.0)
 
-    # 4. Plotting
     plt.figure(figsize=(8, 6))
     sns.heatmap(strategy_matrix, annot=True, fmt=".2f", cmap="YlOrRd",
                 xticklabels=actions, yticklabels=cards, vmin=0, vmax=1)

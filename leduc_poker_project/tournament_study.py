@@ -14,8 +14,6 @@ import seaborn as sns
 import networkx as nx
 import matplotlib.patheffects as PathEffects
 
-# --- MONKEY PATCH PER OPEN_SPIEL VISUALIZER ---
-# Evitiamo di modificare la libreria su disco, sovrascriviamo il metodo di disegno a runtime.
 def _improved_draw_network(self):
     """Versione migliorata del disegno della rete per Alpha-Rank."""
     import networkx as nx
@@ -25,57 +23,49 @@ def _improved_draw_network(self):
     node_sizes = 5000 if self.num_populations == 1 else 15000
     vmin, vmax = 0, np.max(self.pi) + 0.1
     
-    # Disegno Nodi
     nx.draw_networkx_nodes(
         self.g, self.pos, ax=ax, node_size=node_sizes, node_color=self.node_colors,
         edgecolors="k", cmap=plt.cm.Blues, vmin=vmin, vmax=vmax, linewidths=1.5)
     
-    # Disegno Frecce CURVE
     nx.draw_networkx_edges(
         self.g, self.pos, ax=ax, node_size=node_sizes, arrowstyle="->", arrowsize=15,
         edge_color=self.edge_colors, width=2, alpha=0.5,
         connectionstyle='arc3,rad=0.2')
     
-    # Disegno Etichette Archi (con un piccolo trucco per la leggibilità)
     nx.draw_networkx_edge_labels(self.g, self.pos, edge_labels=self.edge_labels, 
                                  ax=ax, font_size=7, label_pos=0.3)
     
-    # Disegno Etichette Nodi PERSONALIZZATE (senza LaTeX pi_...)
     for i in self.g.nodes:
         x, y = self.pos[i]
         label = self.state_labels[i]
-        # Mostriamo il nome abbreviato e la probabilità
+
         node_text = f"{label}\n{self.pi[i]:.2f}"
         txt = ax.text(x, y, node_text, ha="center", va="center", 
                      fontsize=9, fontweight='bold', color='black')
-        # Aggiungiamo un contorno bianco alle scritte per la leggibilità
+
         txt.set_path_effects([PathEffects.withStroke(linewidth=3, foreground="white", alpha=0.9)])
     
     ax.set_axis_off()
 
-# Applichiamo la patch globalmente per questo processo
 alpharank_visualizer.NetworkPlot._draw_network = _improved_draw_network
-# ----------------------------------------------
 
 def setup_gpu():
     """Configura l'ambiente per usare la GPU correttamente in WSL/Linux."""
     if os.environ.get("GPU_SETUP_DONE") == "1":
         return
 
-    # Forza JAX a non preallocare tutta la memoria VRAM
     os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
-    # Silenzia i log verbosi di TF/JAX
+
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     
-    # Trova dinamicamente i percorsi delle librerie NVIDIA nel venv
     import sys
     import glob
-    # Cerchiamo di risalire alla cartella site-packages
+
     venv_site_packages = next((p for p in sys.path if 'site-packages' in p and '.venv' in p), None)
     
-    lib_paths = ["/usr/lib/wsl/lib"] # Percorso standard WSL
+    lib_paths = ["/usr/lib/wsl/lib"]
     if venv_site_packages:
-        # Cerca tutte le cartelle 'lib' dentro i pacchetti nvidia
+
         nvidia_libs = glob.glob(os.path.join(venv_site_packages, "nvidia/*/lib"))
         lib_paths.extend(nvidia_libs)
     
@@ -83,7 +73,7 @@ def setup_gpu():
         current_ld = os.environ.get("LD_LIBRARY_PATH", "")
         os.environ["LD_LIBRARY_PATH"] = ":".join(lib_paths) + (":" + current_ld if current_ld else "")
         os.environ["GPU_SETUP_DONE"] = "1"
-        # Riavvia lo script con il nuovo LD_LIBRARY_PATH (necessario perché venga letto dal linker)
+
         os.execv(sys.executable, [sys.executable] + sys.argv)
 
 setup_gpu()
@@ -94,7 +84,6 @@ try:
 except Exception as e:
     print(f"Nota: JAX non ha rilevato GPU (usa CPU): {e}")
 
-# Import agents for loading (assuming they are saved as pickles or have load methods)
 from open_spiel.python.jax import dqn
 from open_spiel.python.jax import nfsp
 from open_spiel.python.jax import deep_cfr
@@ -114,8 +103,6 @@ class AgentWrapper(policy.Policy):
         obs["legal_actions"][cur_player] = legal_actions
         time_step = rl_environment.TimeStep(observations=obs, rewards=None, discounts=None, step_type=None)
         
-        # Temporarily set the agent's player_id to the current player
-        # so that agent.step() doesn't return empty probs
         original_player_id = getattr(self.agent, "player_id", None)
         if original_player_id is not None:
             self.agent.player_id = cur_player
@@ -126,11 +113,9 @@ class AgentWrapper(policy.Policy):
         else:
             p = self.agent.step(time_step, is_evaluation=True).probs
         
-        # Restore original player_id if desired
         if original_player_id is not None:
             self.agent.player_id = original_player_id
         
-        # --- FIX: Robust Normalization ---
         legals_p = np.array([p[a] for a in legal_actions], dtype=np.float64)
         legals_p = np.clip(legals_p, 0, 1)
         sum_p = np.sum(legals_p)
@@ -149,7 +134,7 @@ def load_agent(path, algo, env):
     
     if algo == "dqn":
         agent = dqn.DQN(0, info_state_size, num_actions, [128])
-        # In comparison_study.py we saved dicts
+
         with open(path, "rb") as f:
             state = pickle.load(f)
             try:
@@ -166,24 +151,23 @@ def load_agent(path, algo, env):
             except KeyError:
                 raise ValueError(f"Errore: Il file {path} non sembra contenere un modello NFSP (chiavi 'avg_params' o 'q_params' mancanti). Forse è un modello DQN?")
     elif algo == "deep_cfr":
-        # We need to initialize the solver with the same architecture
-        # For simplicity, we assume default 128-128
+
         agent = deep_cfr.DeepCFRSolver(
             env.game,
             policy_network_layers=[128, 128],
             advantage_network_layers=[128, 128],
-            num_iterations=1, # Doesn't matter for loading
-            num_traversals=1  # Doesn't matter for loading
+            num_iterations=1,
+            num_traversals=1
         )
         with open(path, "rb") as f:
             state = pickle.load(f)
             agent._params_adv_network = state["adv_params"]
             agent._params_policy_network = state["policy_params"]
-        return agent  # DeepCFRSolver is already a Policy
+        return agent
     elif algo == "cfr":
         with open(path, "rb") as f:
             solver = pickle.load(f)
-            # CFRSolver provides a method to get the average policy as an OpenSpiel Policy
+
             return solver.average_policy()
     else:
         raise ValueError(f"Algoritmo {algo} non supportato")
@@ -209,7 +193,7 @@ def play_matchup(game, policy0, policy1, num_episodes=100, report_every=500):
                 probs_dict = pol.action_probabilities(state)
                 actions = list(probs_dict.keys())
                 probs = np.array(list(probs_dict.values()), dtype=np.float64)
-                # Normalize
+
                 sum_p = np.sum(probs)
                 if sum_p > 0:
                     probs /= sum_p
@@ -244,13 +228,13 @@ def run_tournament(args):
 
     num_agents = len(agent_configs)
     raw_payoff_matrix = np.zeros((num_agents, num_agents))
-    payoff_evolution = {} # (i, j) -> list of (ep, val)
+    payoff_evolution = {}
     
-    if not agent_configs: # Changed from 'agents' to 'agent_configs' for accuracy
+    if not agent_configs:
         print("\n\033[91mErrore: Nessun agente caricato correttamente. Verifica il formato 'path:algo:label'.\033[0m")
         return
 
-    print(f"Inizio Torneo tra {num_agents} agenti (Matchup a posizioni invertite)...") # Kept num_agents for consistency
+    print(f"Inizio Torneo tra {num_agents} agenti (Matchup a posizioni invertite)...")
     report_interval = 500
     
     for i in range(num_agents):
@@ -258,15 +242,13 @@ def run_tournament(args):
             p_i = load_agent(agent_configs[i][0], agent_configs[i][1], env)
             p_j = load_agent(agent_configs[j][0], agent_configs[j][1], env)
             
-            # Scontro 1: i=P0, j=P1
             rew_i0, hist_i0 = play_matchup(env.game, p_i, p_j, num_episodes=args.episodes // 2, report_every=report_interval)
-            # Scontro 2: j=P0, i=P1
+
             rew_j0, hist_j0 = play_matchup(env.game, p_j, p_i, num_episodes=args.episodes // 2, report_every=report_interval)
             
             raw_payoff_matrix[i, j] = rew_i0
             raw_payoff_matrix[j, i] = rew_j0
             
-            # Calcolo evoluzione payoff netto
             net_hist = []
             for (ep_i, val_i), (ep_j, val_j) in zip(hist_i0, hist_j0):
                 net_hist.append((ep_i + ep_j, (val_i - val_j) / 2))
@@ -281,7 +263,6 @@ def run_tournament(args):
             if i != j:
                 payoff_matrix[i, j] = (raw_payoff_matrix[i, j] - raw_payoff_matrix[j, i]) / 2
     
-    # --- ANALISI MULTI-ALPHA ---
     alphas_to_study = [0.25, 0.5, 0.75, 1.0]
     multi_alpha_results = {}
     
@@ -291,7 +272,6 @@ def run_tournament(args):
         _, _, pi_a, _, _ = alpharank.compute(payoff_tables, alpha=a)
         multi_alpha_results[a] = pi_a
     
-    # Classifica Finale Alpha-Rank
     _, _, pi, _, _ = alpharank.compute(payoff_tables, alpha=args.alpha)
     print("\nClassifica Finale Alpha-Rank (alpha={}):".format(args.alpha))
     labels = [c[2] for c in agent_configs]
@@ -300,25 +280,21 @@ def run_tournament(args):
     for idx in sorted_indices:
         print(f"{labels[idx]:15s}: {pi[idx]:.4f} (NashConv: {nconvs[idx]:.4f})")
 
-    # --- Leaderboard Payoff ---
     print("\nLeaderboard per Payoff Medio (Chips guadagnate per mano contro tutti):")
     avg_payoffs = np.mean(payoff_matrix, axis=1)
     leaderboard_indices = np.argsort(avg_payoffs)[::-1]
     for idx in leaderboard_indices:
         print(f"{labels[idx]:15s}: {avg_payoffs[idx]:+.4f} chips/mano")
 
-    # Visualization
     if args.plot:
         print("Generazione visualizzazioni avanzate (OpenSpiel EGT Framework)...")
         
-        # 1. Analisi Multi-Alpha: Distribuzioni stazionarie comparate
         plt.figure(figsize=(12, 6))
         x = np.arange(len(labels))
         width = 0.25
         for idx, a in enumerate(alphas_to_study):
             plt.bar(x + (idx-1)*width, multi_alpha_results[a], width, label=f'Alpha={a}')
         
-        # Aggiunta etichette NashConv sui nomi
         new_labels = [f"{l}\n(NC: {nc:.3f})" for l, nc in zip(labels, nconvs)]
         
         plt.xlabel('Strategie degli Agenti (con NashConv)')
@@ -330,19 +306,15 @@ def run_tournament(args):
         plt.savefig("plots/multi_alpha_analysis.png", bbox_inches='tight', dpi=150)
         plt.close()
 
-        # 2. Matrici di Transizione di Markov (Graph Visualization)
         print("Generazione grafici di transizione Markov per Alpha-Rank...")
         for a in alphas_to_study:
             rhos, rho_m, pi_a, _, _ = alpharank.compute(payoff_tables, alpha=a)
             
-            # Utilizziamo la classe NetworkPlot di OpenSpiel
-            # Grazie alla Patch definita all'inizio del file, le etichette saranno pulite e leggibili
             network_plot = alpharank_visualizer.NetworkPlot(
                 payoff_tables, rhos, rho_m, pi_a, labels)
             
             network_plot.first_run = False 
             
-            # Usiamo una dimensione di figura generosa
             fig = plt.figure(figsize=(12, 12))
             network_plot.fig = fig
             network_plot.compute_and_draw_network()
@@ -352,7 +324,6 @@ def run_tournament(args):
             plt.close(fig)
             print(f"- markov_transition_alpha_{a}.png")
 
-        # 3. Evoluzione Temporale del Payoff (Convergenza durante il torneo)
         print("Generazione evoluzione temporale del payoff...")
         plt.figure(figsize=(12, 7))
         for (i, j), hist in payoff_evolution.items():
@@ -368,14 +339,13 @@ def run_tournament(args):
         plt.savefig("plots/payoff_history_evolution.png", bbox_inches='tight', dpi=150)
         plt.close()
 
-        # 4. Dinamiche Evolutive (Phase Portraits - 3 Agenti)
         if num_agents == 3:
             print("Generazione Phase Portrait (Replicator Dynamics Simplesso)...")
             payoff_matrix_egt = payoff_matrix
             dyn = dynamics.SinglePopulationDynamics(payoff_matrix_egt, dynamics.replicator)
             
             fig = plt.figure(figsize=(10, 8))
-            # La proiezione corretta per il simplesso 3x3 in OpenSpiel è '3x3'
+
             ax = fig.add_subplot(111, projection='3x3')
             ax.streamplot(dyn)
             ax.set_labels(labels)
@@ -383,7 +353,6 @@ def run_tournament(args):
             plt.savefig("plots/egt_phase_portrait_advanced.png", bbox_inches='tight', dpi=150)
             plt.close()
 
-        # 5. Payoff Heatmap
         plt.figure(figsize=(10, 8))
         sns.heatmap(payoff_matrix, annot=True, fmt=".3f", cmap="RdYlGn", 
                     xticklabels=labels, yticklabels=labels, cbar_kws={'label': 'Net Gain'})
@@ -405,22 +374,3 @@ if __name__ == "__main__":
     os.makedirs("plots", exist_ok=True)
     run_tournament(args)
 
-# esempio d'uso:
-# python tournament_study.py \
-#    --game leduc_poker \
-#    --episodes 10000 \
-#    --alpha 1.0 \
-#    --plot \
-#    --agents \
-#    leduc_poker_project/checkpoints/replica/nfsp_replica_20260118_124848/agent_0/params.pkl:nfsp:NFSP_Replica \
-#    leduc_poker_project/checkpoints/research/deep_cfr_20000/params.pkl:deep_cfr:Deep_CFR \
-#    leduc_poker_project/checkpoints/research/study_cfr_20260127_095658/cfr_solver_100.pkl:cfr:CFR_Solver \
-#    leduc_poker_project/checkpoints/research/study_dqn_20260119_113306/final_model/agent_0/params.pkl:dqn:DQN_Study
-
-# istruzione one-line
-# python leduc_poker_project/tournament_study.py --game leduc_poker --episodes 10000 --alpha 1.0 --plot --agents leduc_poker_project/checkpoints/replica/nfsp_replica_20260118_124848/agent_0/params.pkl:nfsp:NFSP_Replica leduc_poker_project/checkpoints/research/deep_cfr_20000/params.pkl:deep_cfr:Deep_CFR leduc_poker_project/checkpoints/research/study_cfr_20260127_095658/cfr_solver_100.pkl:cfr:CFR_Solver leduc_poker_project/checkpoints/research/study_dqn_20260119_113306/final_model/agent_0/params.pkl:dqn:DQN_Study
-
-
-
-
-# python leduc_poker_project/tournament_study.py --game leduc_poker --episodes 10000 --alpha 1.0 --plot --agents checkpoints/replica/nsfp_swapped_20260127_112526/agent_0/params.pkl:nfsp:NFSP leduc_poker_project/checkpoints/research/dqn_swapped_20260128_093722/final_model/agent_0/params.pkl:dqn:DQN leduc_poker_project/checkpoints/research/deep_cfr_swapped_20260128_135715/final_model/params.pkl:deep_cfr:Deep_CFR leduc_poker_project/checkpoints/research/cfr_swapped_20260128_114658/cfr_solver_100.pkl:cfr:CFR

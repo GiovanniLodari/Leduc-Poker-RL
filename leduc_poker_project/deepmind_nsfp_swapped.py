@@ -16,20 +16,16 @@ import pickle
 import signal
 import jax
 
-
-# Silenzia avvisi tecnici XLA/JAX
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 
 from dashboard.logger import LocalLogger
 from dashboard.plotter import generate_run_plots
 
-
 def handle_exit(signum, frame, run_name):
     print(f"\nTraining interrotto. Salvataggio finale e generazione grafici...")
     generate_run_plots(run_name)
     sys.exit(0)
-
 
 class OS_Policy_Wrapper(policy.Policy):
     """
@@ -42,11 +38,8 @@ class OS_Policy_Wrapper(policy.Policy):
         self._mode = mode
         self._cache = {}
 
-
     def action_probabilities(self, state, player_id=None):
-        # Leduc Poker ha molti stati che condividono la stessa information state
-        # Usiamo una cache locale per non invocare JAX inutilmente
-        # (questo accelera la valutazione di 5-10x)
+
         infostate_key = state.information_state_string()
         if infostate_key in self._cache:
             return self._cache[infostate_key]
@@ -75,18 +68,15 @@ class OS_Policy_Wrapper(policy.Policy):
     def clear_cache(self):
         self._cache = {}
 
-
-
 def setup_gpu():
     """Configura l'ambiente per abilitare la GPU su WSL/Linux se necessario."""
     try:
         import jax
         if jax.devices()[0].platform == 'gpu':
-            return # GPU già attiva
+            return
     except:
         pass
 
-    # Se siamo qui, la GPU non è attiva. Proviamo a impostare LD_LIBRARY_PATH
     venv_base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     nvidia_base = os.path.join(venv_base, ".venv", "lib", "python3.10", "site-packages", "nvidia")
 
@@ -100,9 +90,8 @@ def setup_gpu():
             print("Configurazione GPU in corso...")
             current_ld = os.environ.get("LD_LIBRARY_PATH", "")
             os.environ["LD_LIBRARY_PATH"] = ":".join(lib_paths) + (":" + current_ld if current_ld else "")
-            # Re-esegue lo script con il nuovo environment
-            os.execv(sys.executable, [sys.executable] + sys.argv)
 
+            os.execv(sys.executable, [sys.executable] + sys.argv)
 
 def start_dashboard():
     """Avvia il server dashboard in background se non è attivo."""
@@ -130,15 +119,13 @@ def train(args):
     run_name = local_logger.run_name
 
     print(f"Inizio run: \033[92m{run_name}\033[0m")
-    # Configura segnale di uscita per salvare i grafici
+
     signal.signal(signal.SIGINT, lambda s, f: handle_exit(s, f, run_name))
 
-    # 1. Setup Ambiente OpenSpiel
     env = rl_environment.Environment(args.game)
     num_actions = env.action_spec()["num_actions"]
     info_state_size = env.observation_spec()["info_state"][0]
 
-    # 2. Setup Agenti
     if args.algo == "nfsp":
         agents = [
             nfsp.NFSP(idx, info_state_size, num_actions, [128],
@@ -159,13 +146,11 @@ def train(args):
 
     print(f"--- REPLICA GOOGLE DEEPMIND: {args.algo.upper()} ---")
 
-    # 3. Training Loop
     checkpoint_dir = os.path.join("leduc_poker_project/checkpoints", "replica", run_name)
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     for ep in range(args.episodes):
-        # Mappa dei ruoli: agents[0] ha sempre _player_id=0, agents[1] ha sempre _player_id=1.
-        # Decidiamo chi interpreta quale ruolo nell'ambiente per questo episodio.
+
         if np.random.rand() < 0.5:
             env_to_agent = {0: agents[0], 1: agents[1]}
         else:
@@ -176,8 +161,6 @@ def train(args):
             player_id = time_step.observations["current_player"]
             acting_agent = env_to_agent[player_id]
             
-            # Se l'agente sta interpretando il ruolo opposto al suo ID, 
-            # invertiamo le osservazioni, i reward e i discount affinché trovi i suoi dati al giusto indice (0 o 1).
             if acting_agent.player_id != player_id:
                 obs = time_step.observations.copy()
                 obs["info_state"] = [obs["info_state"][1], obs["info_state"][0]]
@@ -194,7 +177,6 @@ def train(args):
                 
             time_step = env.step([action_output.action])
        
-        # Step finale per l'apprendimento (necessario per aggiornare i buffer terminali)
         for role, agent in env_to_agent.items():
             if agent.player_id != role:
                 obs = time_step.observations.copy()
@@ -209,9 +191,8 @@ def train(args):
             else:
                 agent.step(time_step)
 
-        # 4. Valutazione e Salvataggio Periodico
         if ep % args.eval_every == 0:
-            # Svuota la cache per calcolare la politica corrente dell'agente
+
             eval_policy.clear_cache()
             expl = exploitability.exploitability(env.game, eval_policy)
             nash_conv = expl * 2
@@ -225,7 +206,7 @@ def train(args):
                 os.makedirs(agent_path, exist_ok=True)
                
                 if args.algo == "nfsp":
-                    # Salvataggio manuale parametri JAX (Haiku)
+
                     state = {
                         "avg_params": agent.params_avg_network,
                         "q_params": agent._rl_agent.params_q_network,
@@ -233,7 +214,7 @@ def train(args):
                     with open(os.path.join(agent_path, "params.pkl"), "wb") as f:
                         pickle.dump(state, f)
                 else:
-                    # DQN JAX
+
                     state = {"q_params": agent.params_q_network}
                     with open(os.path.join(agent_path, "params.pkl"), "wb") as f:
                         pickle.dump(state, f)
@@ -254,7 +235,7 @@ def train(args):
         os.makedirs(agent_path, exist_ok=True)
 
         if args.algo == "nfsp":
-            # Salvataggio manuale parametri JAX (Haiku)
+
             state = {
                 "avg_params": agent.params_avg_network,
                 "q_params": agent._rl_agent.params_q_network,
@@ -262,7 +243,7 @@ def train(args):
             with open(os.path.join(agent_path, "params.pkl"), "wb") as f:
                 pickle.dump(state, f)
         else:
-            # DQN JAX
+
             state = {"q_params": agent.params_q_network}
             with open(os.path.join(agent_path, "params.pkl"), "wb") as f:
                 pickle.dump(state, f)

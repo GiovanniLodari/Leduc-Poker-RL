@@ -28,7 +28,6 @@ def setup_gpu():
             os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3" 
             os.execv(sys.executable, [sys.executable] + sys.argv)
 
-# Esegui setup immediato
 setup_gpu()
 
 import numpy as np
@@ -41,7 +40,6 @@ from open_spiel.python.jax import nfsp
 from open_spiel.python.jax import deep_cfr
 import jax
 
-# Silenzia avvisi tecnici XLA/JAX
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 
@@ -78,8 +76,6 @@ class OS_Policy_Wrapper(policy.Policy):
         else:
             p = self._agents[cur_player].step(time_step, is_evaluation=True).probs
         
-        # --- FIX: Robust Normalization ---
-        # Prendiamo solo le azioni legali e assicuriamoci che siano >= 0
         legals_p = np.array([p[a] for a in legal_actions], dtype=np.float64)
         legals_p = np.clip(legals_p, 0, 1)
         
@@ -87,7 +83,7 @@ class OS_Policy_Wrapper(policy.Policy):
         if sum_p > 0:
             legals_p /= sum_p
         else:
-            # Fallback se tutto è zero (molto raro): uniforme sulle legali
+
             legals_p = np.ones(len(legal_actions)) / len(legal_actions)
             
         probs_dict = {a: float(prob) for a, prob in zip(legal_actions, legals_p)}
@@ -96,7 +92,6 @@ class OS_Policy_Wrapper(policy.Policy):
 
     def clear_cache(self):
         self._cache = {}
-
 
 def start_dashboard():
     """Avvia il server dashboard in background se non è attivo."""
@@ -124,10 +119,8 @@ def run_comparison(args):
     checkpoint_dir = os.path.join("leduc_poker_project/checkpoints", "research", run_name)
     os.makedirs(checkpoint_dir, exist_ok=True)
     
-    # Configura segnale di uscita
     signal.signal(signal.SIGINT, lambda s, f: handle_exit(s, f, run_name))
     
-    # --- ALGORITMI TABULARI (CFR) ---
     if args.algo == "cfr":
         print("--- CFR COMPARISON STUDY ---")
         solver = cfr.CFRSolver(env.game)
@@ -144,7 +137,6 @@ def run_comparison(args):
                     pickle.dump(solver, f)
                 print(f"Salvato checkpoint CFR: {path}")
 
-    # --- DEEP CFR (Iterative Approach) ---
     elif args.algo == "deep_cfr":
         print("--- DEEP CFR COMPARISON STUDY ---")
         solver = deep_cfr.DeepCFRSolver(
@@ -160,7 +152,7 @@ def run_comparison(args):
         )
 
         for i in range(args.iterations):
-            # Esegui una singola iterazione di Deep CFR manually per monitorare la NashConv
+
             for p in range(env.game.num_players()):
                 for _ in range(args.traversals):
                     solver._traverse_game_tree(solver._root_node, p)
@@ -169,7 +161,7 @@ def run_comparison(args):
             solver._iteration += 1
 
             if i % args.eval_every == 0:
-                # Per Deep CFR, dobbiamo addestrare brevemente la policy network per ottenere la politica media
+
                 solver._learn_strategy_network()
                 conv = exploitability.exploitability(env.game, solver)
                 print(f"Iter {i:7d} | Exploitability: {conv:.6f} | NashConv: {conv*2:.6f}")
@@ -186,8 +178,6 @@ def run_comparison(args):
                     pickle.dump(state, f)
                 print(f"Salvato checkpoint Deep CFR (params): {path}")
 
-
-    # --- ALGORITMI DEEP RL (NFSP, DQN) ---
     else:
         print(f"--- {args.algo.upper()} COMPARISON STUDY ---")
         num_actions = env.action_spec()["num_actions"]
@@ -198,12 +188,12 @@ def run_comparison(args):
                                reservoir_buffer_capacity=args.reservoir,
                                anticipatory_param=args.anticipatory) for idx in range(2)]
             eval_policy = OS_Policy_Wrapper(env, agents, nfsp.MODE.average_policy)
-        else: # dqn
+        else:
             agents = [dqn.DQN(idx, info_state_size, num_actions, [args.hidden]) for idx in range(2)]
             eval_policy = OS_Policy_Wrapper(env, agents)
 
         for ep in range(args.iterations):
-            # Mappa dei ruoli: agents[0] ha sempre player_id=0, agents[1] ha sempre player_id=1.
+
             if np.random.rand() < 0.5:
                 env_to_agent = {0: agents[0], 1: agents[1]}
             else:
@@ -230,7 +220,6 @@ def run_comparison(args):
                     
                 time_step = env.step([action_output.action])
             
-            # Step finale per l'apprendimento
             for role, agent in env_to_agent.items():
                 if agent.player_id != role:
                     obs = time_step.observations.copy()
@@ -264,7 +253,7 @@ def run_comparison(args):
                         with open(os.path.join(agent_path, "params.pkl"), "wb") as f:
                             pickle.dump(state, f)
                     else:
-                        # DQN JAX
+
                         state = {"q_params": agent.params_q_network}
                         with open(agent_path + ".pkl", "wb") as f:
                             pickle.dump(state, f)
@@ -274,16 +263,15 @@ def run_comparison(args):
     os.makedirs(final_path, exist_ok=True)
 
     if args.algo == "cfr":
-        # Valutazione finale per CFR (Tabulare)
+
         conv = exploitability.exploitability(env.game, solver.average_policy())
         print(f"FINALE CFR | NashConv: {conv * 2:.6f}")
         local_logger.log({"iteration": args.iterations, "nash_conv": float(conv * 2)})
         
-        # Salvataggio oggetto solver CFR
         with open(os.path.join(final_path, "cfr_solver_final.pkl"), "wb") as f:
             pickle.dump(solver, f)
     elif args.algo == "deep_cfr":
-        # Valutazione finale per Deep CFR
+
         solver._learn_strategy_network()
         conv = exploitability.exploitability(env.game, solver)
         print(f"FINALE DEEP CFR | Exploitability: {conv:.6f} | NashConv: {conv * 2:.6f}")
@@ -296,19 +284,18 @@ def run_comparison(args):
         with open(os.path.join(final_path, "params.pkl"), "wb") as f:
             pickle.dump(state, f)
     else:
-        # Valutazione finale per NFSP/DQN (Deep RL)
+
         eval_policy.clear_cache()
         conv = exploitability.exploitability(env.game, eval_policy)
         print(f"FINALE {args.algo.upper()} | NashConv: {conv * 2:.6f}")
         local_logger.log({"iteration": args.iterations, "nash_conv": float(conv * 2), "exploitability": float(conv)})
         
-        # Salvataggio pesi JAX per ogni agente
         for idx, agent in enumerate(agents):
             agent_dir = os.path.join(final_path, f"agent_{idx}")
             os.makedirs(agent_dir, exist_ok=True)
             if args.algo == "nfsp":
                 state = {"avg_params": agent.params_avg_network, "q_params": agent._rl_agent.params_q_network}
-            else: # dqn
+            else:
                 state = {"q_params": agent.params_q_network}
             with open(os.path.join(agent_dir, "params.pkl"), "wb") as f:
                 pickle.dump(state, f)
