@@ -1,0 +1,11 @@
+# OpenSpiel va installato a parte (vedi README)
+numpy
+pandas
+matplotlib
+seaborn
+networkx
+jax
+dm-haiku
+torch
+fastapi
+uvicorn

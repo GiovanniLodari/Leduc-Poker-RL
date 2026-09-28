@@ -1,1 +1,16 @@
 open_spiel/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Checkpoint prodotti dagli script (pesanti, si rigenerano con l'addestramento)
+checkpoints/
+*.pkl
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
