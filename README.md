@@ -1,50 +1,50 @@
 # Leduc Poker RL
 
-Esperimenti di reinforcement learning su **Leduc Poker**, un piccolo poker a informazione imperfetta, usando [OpenSpiel](https://github.com/google-deepmind/open_spiel). Il progetto confronta **NFSP** (*Neural Fictitious Self-Play*) con **DQN**, **CFR** e **Deep CFR**, misura quanto le strategie apprese sono sfruttabili (*exploitability*) e prova varianti della rete di NFSP.
+Reinforcement-learning experiments on **Leduc Poker**, a small imperfect-information poker game, using [OpenSpiel](https://github.com/google-deepmind/open_spiel). The project compares **NFSP** (*Neural Fictitious Self-Play*) with **DQN**, **CFR** and **Deep CFR**, measures how exploitable the learned strategies are (*exploitability*) and tries variants of the NFSP network.
 
-## Contenuto
+## Contents
 
-| Percorso | Contenuto |
+| Path | Content |
 |---|---|
-| `leduc_poker_project/replica_deepmind.py` | Addestramento di NFSP e DQN (JAX) su Leduc Poker |
-| `leduc_poker_project/deepmind_nsfp_*.py` | Varianti di NFSP: rete con attention, MLP piccolo o profondo, warm-up, ecc. |
-| `leduc_poker_project/comparison_study*.py` | Confronto tra algoritmi (`nfsp`, `dqn`, `cfr`, `deep_cfr`) |
-| `leduc_poker_project/tournament_study.py` | Torneo tra agenti con classifica Alpha-Rank |
-| `leduc_poker_project/visualize_strategy*.py` | Visualizzazione delle strategie apprese |
-| `leduc_poker_project/run_experiments.py` | Lancia una serie di esperimenti in sequenza |
-| `leduc_poker_project/dashboard/` | Monitor locale (FastAPI) per seguire l'addestramento |
-| `leduc_poker_project/logs/`, `plots/` | Log delle run (JSONL) e grafici prodotti |
-| `archive/` | Grafici di run precedenti |
+| `leduc_poker_project/replica_deepmind.py` | NFSP and DQN training (JAX) on Leduc Poker |
+| `leduc_poker_project/deepmind_nsfp_*.py` | NFSP variants: attention network, small or deep MLP, warm-up, etc. |
+| `leduc_poker_project/comparison_study*.py` | Comparison across algorithms (`nfsp`, `dqn`, `cfr`, `deep_cfr`) |
+| `leduc_poker_project/tournament_study.py` | Tournament between agents with Alpha-Rank ranking |
+| `leduc_poker_project/visualize_strategy*.py` | Visualization of learned strategies |
+| `leduc_poker_project/run_experiments.py` | Runs a series of experiments in sequence |
+| `leduc_poker_project/dashboard/` | Local monitor (FastAPI) to follow training |
+| `leduc_poker_project/logs/`, `plots/` | Run logs (JSONL) and generated plots |
+| `archive/` | Plots from earlier runs |
 
-Durante l'addestramento le metriche vengono scritte in `leduc_poker_project/logs/` e i grafici in `leduc_poker_project/plots/`. I checkpoint vanno in `leduc_poker_project/checkpoints/`, che non è nel repository perché pesante.
+During training, metrics are written to `leduc_poker_project/logs/` and plots to `leduc_poker_project/plots/`. Checkpoints go to `leduc_poker_project/checkpoints/`, which is not in the repository because it is heavy.
 
-## Installazione
+## Installation
 
-Serve un ambiente in cui OpenSpiel sia installabile (Linux, macOS o WSL).
+An environment where OpenSpiel can be installed is required (Linux, macOS or WSL).
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-pip install open_spiel            # oppure build da sorgente, vedi la guida di OpenSpiel
+pip install open_spiel            # or build from source, see the OpenSpiel guide
 ```
 
-## Uso
+## Usage
 
-Gli script vanno lanciati dalla radice del repository.
+Run the scripts from the repository root.
 
 ```bash
-# Addestramento NFSP su Leduc Poker
+# NFSP training on Leduc Poker
 python leduc_poker_project/replica_deepmind.py --algo nfsp --episodes 1000000
 
-# Confronto con altri algoritmi
+# Comparison with other algorithms
 python leduc_poker_project/comparison_study.py --algo cfr --iterations 100000
 
-# Torneo Alpha-Rank tra checkpoint (path:algo:label)
+# Alpha-Rank tournament between checkpoints (path:algo:label)
 python leduc_poker_project/tournament_study.py --agents <path>:nfsp:NFSP_16 <path>:dqn:DQN --plot
 
-# Strategia appresa da un checkpoint
+# Strategy learned by a checkpoint
 python leduc_poker_project/visualize_strategy.py --path <checkpoint>/params.pkl --algo nfsp
 ```
 
-Gli script di addestramento avviano anche il monitor su <http://localhost:8000>, che mostra le run in `logs/`.
+The training scripts also start the monitor at <http://localhost:8000>, which shows the runs in `logs/`.
